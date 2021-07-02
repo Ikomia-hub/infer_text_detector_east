@@ -4,15 +4,15 @@
 CTextDetectorEAST::CTextDetectorEAST() : COcvDnnProcess()
 {
     m_pParam = std::make_shared<CTextDetectorEASTParam>();
-    addOutput(std::make_shared<CGraphicsProcessOutput>());
-    addOutput(std::make_shared<CMeasureProcessIO>());
+    addOutput(std::make_shared<CGraphicsOutput>());
+    addOutput(std::make_shared<CMeasureIO>());
 }
 
 CTextDetectorEAST::CTextDetectorEAST(const std::string &name, const std::shared_ptr<CTextDetectorEASTParam> &pParam): COcvDnnProcess(name)
 {
     m_pParam = std::make_shared<CTextDetectorEASTParam>(*pParam);
-    addOutput(std::make_shared<CGraphicsProcessOutput>());
-    addOutput(std::make_shared<CMeasureProcessIO>());
+    addOutput(std::make_shared<CGraphicsOutput>());
+    addOutput(std::make_shared<CMeasureIO>());
 }
 
 size_t CTextDetectorEAST::getProgressSteps()
@@ -38,7 +38,7 @@ cv::Scalar CTextDetectorEAST::getNetworkInputMean() const
 void CTextDetectorEAST::run()
 {
     beginTaskRun();
-    auto pInput = std::dynamic_pointer_cast<CImageProcessIO>(getInput(0));
+    auto pInput = std::dynamic_pointer_cast<CImageIO>(getInput(0));
     auto pParam = std::dynamic_pointer_cast<CTextDetectorEASTParam>(m_pParam);
 
     if(pInput == nullptr || pParam == nullptr)
@@ -108,7 +108,7 @@ void CTextDetectorEAST::manageOutput(const std::vector<cv::Mat>& netOutputs)
     CV_Assert(scores.size[2] == geometry.size[2]); CV_Assert(scores.size[3] == geometry.size[3]);
 
     auto pParam = std::dynamic_pointer_cast<CTextDetectorEASTParam>(m_pParam);
-    auto pInput = std::dynamic_pointer_cast<CImageProcessIO>(getInput(0));
+    auto pInput = std::dynamic_pointer_cast<CImageIO>(getInput(0));
     CMat imgSrc = pInput->getImage();
 
     std::vector<cv::RotatedRect> detections;
@@ -154,12 +154,12 @@ void CTextDetectorEAST::manageOutput(const std::vector<cv::Mat>& netOutputs)
     cv::dnn::NMSBoxes(detections, confidences, pParam->m_confidence, pParam->m_nmsThreshold, indices);
 
     //Graphics output
-    auto pGraphicsOutput = std::dynamic_pointer_cast<CGraphicsProcessOutput>(getOutput(1));
+    auto pGraphicsOutput = std::dynamic_pointer_cast<CGraphicsOutput>(getOutput(1));
     pGraphicsOutput->setNewLayer(getName());
     pGraphicsOutput->setImageIndex(0);
 
     //Measures output
-    auto pMeasureOutput = std::dynamic_pointer_cast<CMeasureProcessIO>(getOutput(2));
+    auto pMeasureOutput = std::dynamic_pointer_cast<CMeasureIO>(getOutput(2));
     pMeasureOutput->clearData();
 
     int size = getNetworkInputSize();

@@ -64,7 +64,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEAST: public COcvDnnProcess
 //------------------------------------//
 //----- CTextDetectorEASTFactory -----//
 //------------------------------------//
-class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTFactory : public CProcessFactory
+class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTFactory : public CTaskFactory
 {
     public:
 
@@ -94,7 +94,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTFactory : public CProcessFa
             m_info.m_keywords = "deep,learning,detection,tensorflow";
         }
 
-        virtual ProtocolTaskPtr create(const ProtocolTaskParamPtr& pParam) override
+        virtual WorkflowTaskPtr create(const WorkflowTaskParamPtr& pParam) override
         {
             auto paramPtr = std::dynamic_pointer_cast<CTextDetectorEASTParam>(pParam);
             if(paramPtr != nullptr)
@@ -102,7 +102,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTFactory : public CProcessFa
             else
                 return create();
         }
-        virtual ProtocolTaskPtr create() override
+        virtual WorkflowTaskPtr create() override
         {
             auto paramPtr = std::make_shared<CTextDetectorEASTParam>();
             assert(paramPtr != nullptr);
@@ -121,7 +121,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTWidget: public COcvWidgetDn
         {
             init();
         }
-        CTextDetectorEASTWidget(ProtocolTaskParamPtr pParam, QWidget *parent = Q_NULLPTR): COcvWidgetDnnCore(pParam, parent)
+        CTextDetectorEASTWidget(WorkflowTaskParamPtr pParam, QWidget *parent = Q_NULLPTR): COcvWidgetDnnCore(pParam, parent)
         {
             m_pParam = std::dynamic_pointer_cast<CTextDetectorEASTParam>(pParam);
             init();
@@ -172,7 +172,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTWidgetFactory : public CWid
             m_name = QObject::tr("Text Detector EAST").toStdString();
         }
 
-        virtual ProtocolTaskWidgetPtr   create(ProtocolTaskParamPtr pParam)
+        virtual WorkflowTaskWidgetPtr   create(WorkflowTaskParamPtr pParam)
         {
             return std::make_shared<CTextDetectorEASTWidget>(pParam);
         }
@@ -189,7 +189,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTInterface : public QObject,
 
     public:
 
-        virtual std::shared_ptr<CProcessFactory> getProcessFactory()
+        virtual std::shared_ptr<CTaskFactory> getProcessFactory()
         {
             return std::make_shared<CTextDetectorEASTFactory>();
         }
