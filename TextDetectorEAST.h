@@ -129,7 +129,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTWidget: public COcvWidgetDn
 
     private:
 
-        void init() override
+        void init()
         {
             if(m_pParam == nullptr)
                 m_pParam = std::make_shared<CTextDetectorEASTParam>();
@@ -153,10 +153,11 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTWidget: public COcvWidgetDn
                 assert(pParam);
                 pParam->m_nmsThreshold = val;
             });
-            connect(m_pApplyBtn, &QPushButton::clicked, [&]
-            {
-                emit doApplyProcess(m_pParam);
-            });
+        }
+
+        void onApply() override
+        {
+            emit doApplyProcess(m_pParam);
         }
 };
 
