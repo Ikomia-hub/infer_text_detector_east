@@ -5,14 +5,14 @@ CTextDetectorEAST::CTextDetectorEAST() : COcvDnnProcess()
 {
     m_pParam = std::make_shared<CTextDetectorEASTParam>();
     addOutput(std::make_shared<CGraphicsOutput>());
-    addOutput(std::make_shared<CMeasureIO>());
+    addOutput(std::make_shared<CBlobMeasureIO>());
 }
 
 CTextDetectorEAST::CTextDetectorEAST(const std::string &name, const std::shared_ptr<CTextDetectorEASTParam> &pParam): COcvDnnProcess(name)
 {
     m_pParam = std::make_shared<CTextDetectorEASTParam>(*pParam);
     addOutput(std::make_shared<CGraphicsOutput>());
-    addOutput(std::make_shared<CMeasureIO>());
+    addOutput(std::make_shared<CBlobMeasureIO>());
 }
 
 size_t CTextDetectorEAST::getProgressSteps()
@@ -159,7 +159,7 @@ void CTextDetectorEAST::manageOutput(const std::vector<cv::Mat>& netOutputs)
     pGraphicsOutput->setImageIndex(0);
 
     //Measures output
-    auto pMeasureOutput = std::dynamic_pointer_cast<CMeasureIO>(getOutput(2));
+    auto pMeasureOutput = std::dynamic_pointer_cast<CBlobMeasureIO>(getOutput(2));
     pMeasureOutput->clearData();
 
     int size = getNetworkInputSize();
