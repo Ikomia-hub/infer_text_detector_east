@@ -70,7 +70,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTFactory : public CTaskFacto
 
         CTextDetectorEASTFactory()
         {
-            m_info.m_name = QObject::tr("Text Detector EAST").toStdString();
+            m_info.m_name = "infer_text_detector_east";
             m_info.m_shortDescription = QObject::tr("Fast and accurate text detection in natural scenes using single neural network").toStdString();
             m_info.m_description = QObject::tr("Previous approaches for scene text detection have already achieved promising performances across various benchmarks. "
                                                "However, they usually fall short when dealing with challenging scenarios, even when equipped with deep neural network models, "
@@ -170,7 +170,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTWidgetFactory : public CWid
 
         CTextDetectorEASTWidgetFactory()
         {
-            m_name = QObject::tr("Text Detector EAST").toStdString();
+            m_name = "infer_text_detector_east";
         }
 
         virtual WorkflowTaskWidgetPtr   create(WorkflowTaskParamPtr pParam)
