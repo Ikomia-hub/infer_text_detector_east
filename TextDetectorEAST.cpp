@@ -22,7 +22,16 @@ size_t CTextDetectorEAST::getProgressSteps()
 
 int CTextDetectorEAST::getNetworkInputSize() const
 {
-    return 576; //Multiple of 32
+    //Multiple of 32
+    int size = 576;
+
+    // Trick to overcome OpenCV issue around CUDA context and multithreading
+    // https://github.com/opencv/opencv/issues/20566
+    auto pParam = std::dynamic_pointer_cast<CTextDetectorEASTParam>(m_pParam);
+    if(pParam->m_backend == cv::dnn::DNN_BACKEND_CUDA && m_bNewInput)
+        size = size + (m_sign * 32);
+
+    return size;
 }
 
 double CTextDetectorEAST::getNetworkInputScaleFactor() const
@@ -92,6 +101,14 @@ void CTextDetectorEAST::run()
     emit m_signalHandler->doProgress();
     manageOutput(netOutputs);
     emit m_signalHandler->doProgress();
+
+    // Trick to overcome OpenCV issue around CUDA context and multithreading
+    // https://github.com/opencv/opencv/issues/20566
+    if(pParam->m_backend == cv::dnn::DNN_BACKEND_CUDA && m_bNewInput)
+    {
+        m_sign *= -1;
+        m_bNewInput = false;
+    }
 }
 
 void CTextDetectorEAST::manageOutput(const std::vector<cv::Mat>& netOutputs)
