@@ -83,7 +83,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTFactory : public CTaskFacto
                                                "the proposed algorithm significantly outperforms state-of-the-art methods in terms of both accuracy and efficiency. "
                                                "On the ICDAR 2015 dataset, the proposed algorithm achieves an F-score of 0.7820 at 13.2fps at 720p resolution.").toStdString();
             m_info.m_path = QObject::tr("Plugins/C++/Text").toStdString();
-            m_info.m_version = "1.1.0";
+            m_info.m_version = "1.2.0";
             m_info.m_iconPath = "Icon/icon.png";
             m_info.m_authors = "Xinyu Zhou, Cong Yao, He Wen, Yuzhi Wang, Shuchang Zhou, Weiran He, Jiajun Liang";
             m_info.m_article = "EAST: An Efficient and Accurate Scene Text Detector";

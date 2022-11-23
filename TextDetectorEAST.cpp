@@ -59,6 +59,13 @@ void CTextDetectorEAST::run()
     //Force model files path
     pParam->m_modelFile = Utils::Plugin::getCppPath() + "/" + Utils::File::conformName(QString::fromStdString(m_name)).toStdString() + "/Model/east_text_detection.pb";
 
+    if (!Utils::File::isFileExist(pParam->m_modelFile))
+    {
+        std::cout << "Downloading model..." << std::endl;
+        std::string downloadUrl = Utils::Plugin::getModelHubUrl() + "/" + m_name + "/east_text_detection.pb";
+        download(downloadUrl, pParam->m_modelFile);
+    }
+
     CMat imgSrc;
     CMat imgOrigin = pInput->getImage();
     std::vector<cv::Mat> netOutputs;
