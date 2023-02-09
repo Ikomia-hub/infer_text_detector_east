@@ -1,18 +1,36 @@
 #include "TextDetectorEAST.h"
 #include "Graphics/CGraphicsLayer.h"
 
-CTextDetectorEAST::CTextDetectorEAST() : COcvDnnProcess()
+CTextDetectorEAST::CTextDetectorEAST() : COcvDnnProcess(), CObjectDetectionTask()
 {
+    init();
     m_pParam = std::make_shared<CTextDetectorEASTParam>();
-    addOutput(std::make_shared<CGraphicsOutput>());
-    addOutput(std::make_shared<CBlobMeasureIO>());
 }
 
-CTextDetectorEAST::CTextDetectorEAST(const std::string &name, const std::shared_ptr<CTextDetectorEASTParam> &pParam): COcvDnnProcess(name)
+CTextDetectorEAST::CTextDetectorEAST(const std::string &name, const std::shared_ptr<CTextDetectorEASTParam> &pParam)
+    : COcvDnnProcess(), CObjectDetectionTask(name)
 {
+    init();
     m_pParam = std::make_shared<CTextDetectorEASTParam>(*pParam);
-    addOutput(std::make_shared<CGraphicsOutput>());
-    addOutput(std::make_shared<CBlobMeasureIO>());
+}
+
+void CTextDetectorEAST::init()
+{
+    m_classNames = {""};
+
+    // Generate random colors
+    std::srand(9);
+    double factor = 255 / (double)RAND_MAX;
+
+    for (size_t i=0; i<m_classNames.size(); ++i)
+    {
+        CColor color = {
+            (int)((double)std::rand() * factor),
+            (int)((double)std::rand() * factor),
+            (int)((double)std::rand() * factor)
+        };
+        m_classColors.push_back(color);
+    }
 }
 
 size_t CTextDetectorEAST::getProgressSteps()
@@ -50,15 +68,17 @@ void CTextDetectorEAST::run()
     auto pInput = std::dynamic_pointer_cast<CImageIO>(getInput(0));
     auto pParam = std::dynamic_pointer_cast<CTextDetectorEASTParam>(m_pParam);
 
-    if(pInput == nullptr || pParam == nullptr)
+    if (pInput == nullptr)
+        throw CException(CoreExCode::INVALID_PARAMETER, "Invalid image input", __func__, __FILE__, __LINE__);
+
+    if (pParam == nullptr)
         throw CException(CoreExCode::INVALID_PARAMETER, "Invalid parameters", __func__, __FILE__, __LINE__);
 
-    if(pInput->isDataAvailable() == false)
-        throw CException(CoreExCode::INVALID_PARAMETER, "Empty image", __func__, __FILE__, __LINE__);
+    if (pInput->isDataAvailable() == false)
+        throw CException(CoreExCode::INVALID_PARAMETER, "Source image is empty", __func__, __FILE__, __LINE__);
 
     //Force model files path
     pParam->m_modelFile = Utils::Plugin::getCppPath() + "/" + Utils::File::conformName(QString::fromStdString(m_name)).toStdString() + "/Model/east_text_detection.pb";
-
     if (!Utils::File::isFileExist(pParam->m_modelFile))
     {
         std::cout << "Downloading model..." << std::endl;
@@ -82,46 +102,27 @@ void CTextDetectorEAST::run()
     {
         if(m_net.empty() || pParam->m_bUpdate)
         {
-            m_net = readDnn();
+            m_net = readDnn(pParam);
             if(m_net.empty())
                 throw CException(CoreExCode::INVALID_PARAMETER, "Failed to load network", __func__, __FILE__, __LINE__);
 
             pParam->m_bUpdate = false;
         }
-
-        int size = getNetworkInputSize();
-        double scaleFactor = getNetworkInputScaleFactor();
-        cv::Scalar mean = getNetworkInputMean();
-        auto inputBlob = cv::dnn::blobFromImage(imgSrc, scaleFactor, cv::Size(size,size), mean, false, false);
-        m_net.setInput(inputBlob);
-
-        auto netOutNames = getOutputsNames();
-        m_net.forward(netOutputs, netOutNames);
+        forward(imgSrc, netOutputs, pParam);
     }
-    catch(cv::Exception& e)
+    catch(std::exception& e)
     {
         throw CException(CoreExCode::INVALID_PARAMETER, e.what(), __func__, __FILE__, __LINE__);
     }
 
-    readClassNames();
     endTaskRun();
     emit m_signalHandler->doProgress();
     manageOutput(netOutputs);
     emit m_signalHandler->doProgress();
-
-    // Trick to overcome OpenCV issue around CUDA context and multithreading
-    // https://github.com/opencv/opencv/issues/20566
-    if(pParam->m_backend == cv::dnn::DNN_BACKEND_CUDA && m_bNewInput)
-    {
-        m_sign *= -1;
-        m_bNewInput = false;
-    }
 }
 
 void CTextDetectorEAST::manageOutput(const std::vector<cv::Mat>& netOutputs)
 {
-    forwardInputImage();
-
     if(netOutputs.size() < 2)
         throw CException(CoreExCode::INVALID_PARAMETER, "Wrong number of EAST Detector outputs", __func__, __FILE__, __LINE__);
 
@@ -177,37 +178,18 @@ void CTextDetectorEAST::manageOutput(const std::vector<cv::Mat>& netOutputs)
     std::vector<int> indices;
     cv::dnn::NMSBoxes(detections, confidences, pParam->m_confidence, pParam->m_nmsThreshold, indices);
 
-    //Graphics output
-    auto pGraphicsOutput = std::dynamic_pointer_cast<CGraphicsOutput>(getOutput(1));
-    pGraphicsOutput->setNewLayer(getName());
-    pGraphicsOutput->setImageIndex(0);
-
-    //Measures output
-    auto pMeasureOutput = std::dynamic_pointer_cast<CBlobMeasureIO>(getOutput(2));
-    pMeasureOutput->clearData();
-
+    // Add objects
+    int id = 0;
     int size = getNetworkInputSize();
     float xFactor = (float)imgSrc.cols / (float)size;
     float yFactor = (float)imgSrc.rows / (float)size;
 
     for(size_t i=0; i<indices.size(); ++i)
     {
-        //Create polygon graphics of rotated box
         cv::RotatedRect& box = detections[indices[i]];
-        cv::Point2f vertices[4];
-        box.points(vertices);
-
-        PolygonF poly;
-        for(int j=0; j<4; ++j)
-            poly.push_back(CPointF(vertices[j].x * xFactor, vertices[j].y * yFactor));
-
-        auto graphicsPoly = pGraphicsOutput->addPolygon(poly);
-
-        //Store values to be shown in results table
-        std::vector<CObjectMeasure> results;
-        results.emplace_back(CObjectMeasure(CMeasure(CMeasure::CUSTOM, QObject::tr("Confidence").toStdString()), confidences[indices[i]], graphicsPoly->getId(), "Text"));
-        results.emplace_back(CObjectMeasure(CMeasure::Id::ORIENTED_BBOX, {box.center.x * xFactor, box.center.y * yFactor, box.size.width, box.size.height, box.angle}, graphicsPoly->getId(), "Text"));
-        pMeasureOutput->addObjectMeasures(results);
+        addObject(id++, 0, confidences[indices[i]],
+                box.center.x * xFactor, box.center.y * yFactor,
+                box.size.width, box.size.height, box.angle);
     }
 }
 
