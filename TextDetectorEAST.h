@@ -3,8 +3,9 @@
 
 #include "TextDetectorEastGlobal.h"
 #include "Process/OpenCV/dnn/COcvDnnProcess.h"
+#include "Task/CObjectDetectionTask.h"
 #include "Widget/OpenCV/dnn/COcvWidgetDnnCore.h"
-#include "CPluginProcessInterface.hpp"
+#include "Core/CPluginProcessInterface.hpp"
 
 //----------------------------------//
 //----- CTextDetectorEASTParam -----//
@@ -42,7 +43,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEASTParam: public COcvDnnProces
 //-----------------------------//
 //----- CTextDetectorEAST -----//
 //-----------------------------//
-class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEAST: public COcvDnnProcess
+class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEAST: public COcvDnnProcess, public CObjectDetectionTask
 {
     public:
 
@@ -58,6 +59,7 @@ class TEXTDETECTOREASTSHARED_EXPORT CTextDetectorEAST: public COcvDnnProcess
 
     private:
 
+        void        init();
         void        manageOutput(const std::vector<cv::Mat> &netOutputs);
 };
 
